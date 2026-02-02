@@ -1,0 +1,12 @@
+Update Employee function
+Delete Employee function
+
+Things to study:
+Optional
+Maven for integrating with mysql
+MySQL 8
+Streams
+parallel streams
+CRUD operations
+
+Try to fetch USERNAME PASSWORD URL from Environment Variables rather than hard coding it.
