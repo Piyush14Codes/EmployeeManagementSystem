@@ -11,8 +11,10 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Scanner;
 
 public class Utils {
 
@@ -121,6 +123,42 @@ public class Utils {
         }
         catch(IOException e) {
             System.out.println("There was some error creating a file");
+        }
+    }
+
+    public void updateEmployeeDetails(int id) {
+        String sql = "UPDATE employee SET name=? , dept_id=?, department = ? , salary=? WHERE id = ?";
+        Scanner sc = new Scanner(System.in);
+
+        try(Connection con = DBConnection.getConnection();
+        PreparedStatement ps = con.prepareStatement(sql)) {
+            System.out.println("Enter name");
+//            sc.nextLine();
+            String name = sc.nextLine();
+
+            System.out.println("Enter Department ID");
+            int dept_id = sc.nextInt();
+
+            System.out.println("Enter Salary");
+            double salary = sc.nextDouble();
+
+            Employee emp = new Employee(name,dept_id,salary);
+
+            ps.setString(1,emp.getName());
+            ps.setInt(2,emp.getDeptId());
+            ps.setString(3,emp.getDept());
+            ps.setDouble(4,emp.getSalary());
+            ps.setInt(5,id);
+
+            int rowsAffected = ps.executeUpdate();
+
+            if(rowsAffected == 0) {
+                System.out.println("No employee found with ID: " + id);
+            } else {
+                System.out.println("Employee Updated Successfully.");
+            }
+        } catch(SQLException e) {
+            e.printStackTrace();
         }
     }
 }

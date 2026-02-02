@@ -15,7 +15,8 @@ public class Main {
         System.out.println("3. Display All Employees.");
         System.out.println("4. Show Total No Employees.");
         System.out.println("5. Export Details to a File");
-        System.out.println("6. Exit.");
+        System.out.println("6. Update Employee Details.");
+        System.out.println("7. Exit.");
     }
 
     private static void searchMenu() {
@@ -81,6 +82,12 @@ public class Main {
                     obj.writeToFile();
                 }
                 else if(choice == 6) {
+                    System.out.println("Enter Employee ID to update");
+                    int id = sc.nextInt();
+
+                    obj.updateEmployeeDetails(id);
+                }
+                else if(choice == 7) {
                     System.out.println("Thank You!");
                     break;
                 }
