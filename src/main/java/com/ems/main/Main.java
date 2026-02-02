@@ -14,7 +14,7 @@ public class Main {
         System.out.println("2. Search Employee.");
         System.out.println("3. Display All Employees.");
         System.out.println("4. Show Total No Employees.");
-        System.out.println("5. Export Details to a File");
+        System.out.println("5. Export Data to CSV File");
         System.out.println("6. Update Employee Details.");
         System.out.println("7. Delete an Employee Record");
         System.out.println("8. Exit.");
@@ -80,7 +80,7 @@ public class Main {
                     System.out.println("Total No of Employees : "+obj.getTotalNoOfEmployees());
                 }
                 else if(choice == 5) {
-                    obj.writeToFile();
+                    obj.exportToCSV();
                 }
                 else if(choice == 6) {
                     System.out.println("Enter Employee ID to Update");

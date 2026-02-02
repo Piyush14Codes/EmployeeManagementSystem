@@ -111,18 +111,28 @@ public class Utils {
         return repository.getNoOfEmployees();
     }
 
-    public void writeToFile() {
-        try(BufferedWriter bw = new BufferedWriter(new FileWriter("employeeDetails.txt"))) {
-            bw.write("  Employee ID     Employee Name       Dept ID     Dept Name       Salary");
+    public void exportToCSV() {
+        String sql = "SELECT * FROM employee";
+        try(Connection con = DBConnection.getConnection();
+        PreparedStatement ps = con.prepareStatement(sql);
+        BufferedWriter bw = new BufferedWriter(new FileWriter("Employee Details.csv"));
+        ResultSet rs = ps.executeQuery()) {
+            bw.write("ID,Name,Department,Dept_ID,Salary");
             bw.newLine();
-            for(Employee emp : repository.getAllEmployees()) {
-                bw.write("  "+emp.getEmployeeId()+"         "+emp.getName()+"       "+emp.getDeptId()+"     "+emp.getDept()+"       "+emp.getSalary());
+            while(rs.next()) {
+                int id = rs.getInt("id");
+                String name = rs.getString("name");
+                String department = rs.getString("department");
+                int deptId = rs.getInt("dept_id");
+                double salary = rs.getDouble("salary");
+
+                bw.write(id+","+name+","+department+","+deptId+","+salary);
                 bw.newLine();
             }
-            System.out.println("Export Successful.");
-        }
-        catch(IOException e) {
-            System.out.println("There was some error creating a file");
+
+            System.out.println("Data successfully exported to CSV File");
+        } catch(Exception e) {
+            e.printStackTrace();
         }
     }
 
