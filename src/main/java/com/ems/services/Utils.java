@@ -161,4 +161,19 @@ public class Utils {
             e.printStackTrace();
         }
     }
+
+    public void deleteEmployee(int id) {
+        String sql = "DELETE FROM employee WHERE id = "+id;
+        try(Connection con = DBConnection.getConnection();
+        PreparedStatement ps = con.prepareStatement(sql)) {
+            int rowsAffected = ps.executeUpdate();
+            if(rowsAffected == 0) {
+                System.out.println("No such Employee exists.");
+            } else {
+                System.out.println("Employee Deleted Successfully.");
+            }
+        } catch(SQLException e) {
+            e.printStackTrace();
+        }
+    }
 }
