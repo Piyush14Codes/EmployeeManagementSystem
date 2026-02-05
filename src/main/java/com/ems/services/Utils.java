@@ -1,19 +1,15 @@
 package com.ems.services;
 import com.ems.model.Employee;
 import com.ems.repository.EmployeeRepository;
-import com.ems.util.DBConnection;
+import com.ems.util.HibernateUtil;
+import org.hibernate.Session;
+import org.hibernate.Transaction;
+import org.hibernate.query.Query;
 
 import java.io.BufferedWriter;
-import java.io.FileNotFoundException;
 import java.io.FileWriter;
-
-import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Scanner;
 
 public class Utils {
@@ -22,7 +18,7 @@ public class Utils {
 
 //    private HashMap<Integer,Employee> mp = new HashMap<>();
 
-    private void displayEmployees(ArrayList<Employee> employees){
+    private void displayEmployees(List<Employee> employees){
         System.out.println("Employee ID     Name    Department  Dept ID     Salary");
         for(Employee emp : employees){
             System.out.println("    "+emp.getEmployeeId()+"         "+emp.getName()+"       "+emp.getDept()+"           "+emp.getDeptId()+"      "+emp.getSalary());
@@ -30,18 +26,13 @@ public class Utils {
     }
 
     public boolean isIdPresent(int id){
-        String sql = "SELECT COUNT(*) FROM employee WHERE id = "+id;
-        int isPresent = 0;
-        try(Connection con = DBConnection.getConnection();
-            PreparedStatement ps = con.prepareStatement(sql);
-            ResultSet rs = ps.executeQuery()) {
-            rs.next();
-            isPresent = rs.getInt("COUNT(*)");
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Employee emp = session.find(Employee.class,id);
+            return emp != null;
         } catch(Exception e) {
             e.printStackTrace();
         }
-
-        return isPresent == 1;
+        return false;
     }
 
     public void addEmployee(Employee emp){
@@ -49,140 +40,113 @@ public class Utils {
     }
 
     public void displayAllEmployees(){
-        ArrayList<Employee> empList = repository.getAllEmployees();
+        List<Employee> empList = repository.getAllEmployees();
         displayEmployees(empList);
     }
 
     public void getEmployeeById(int id){
-        if(isIdPresent(id)){
-            ArrayList<Employee> empList = new ArrayList<>();
-//            emp.add(mp.get(id));
-            String sql = "SELECT * FROM employee WHERE id = "+id;
-            try(Connection con = DBConnection.getConnection();
-            PreparedStatement ps = con.prepareStatement(sql);
-            ResultSet rs = ps.executeQuery()) {
-                rs.next();
-                Employee emp = new Employee(
-                        rs.getString("name"),
-                        rs.getInt("dept_id"),
-                        rs.getDouble("salary")
-                );
-                emp.setEmployeeId(rs.getInt("id"));
-                empList.add(emp);
-            } catch(Exception e) {
-                e.printStackTrace();
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Employee emp = session.find(Employee.class,id);
+
+            if(emp != null) {
+                List<Employee> list = new ArrayList<>();
+                list.add(emp);
+                displayEmployees(list);
+            } else {
+                System.out.println("Could not find employee with ID : "+id);
             }
-            displayEmployees(empList);
-        }
-        else {
-            System.out.println("Could not find employee with ID : "+id);
+        } catch(Exception e) {
+            e.printStackTrace();
         }
     }
 
     public void getEmployeeByName(String name){
-        ArrayList<Employee> searchResult = new ArrayList<>();
-        String sql = "SELECT * FROM employee WHERE name LIKE \"%"+name+"%\"";
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Query<Employee> query = session.createQuery("from Employee e where e.name like :name",Employee.class);
+            query.setParameter("name","%"+name+"%");
 
-        try(Connection con = DBConnection.getConnection();
-        PreparedStatement ps = con.prepareStatement(sql);
-        ResultSet rs = ps.executeQuery()) {
-            while(rs.next()) {
-                Employee emp = new Employee(
-                        rs.getString("name"),
-                        rs.getInt("dept_id"),
-                        rs.getDouble("salary")
-                );
-                emp.setEmployeeId(rs.getInt("id"));
-                searchResult.add(emp);
+            List<Employee> searchResult = query.list();
+
+            if(searchResult.isEmpty()) {
+                System.out.println("No employees found with name : " + name);
+            } else {
+                displayEmployees(searchResult);
             }
-            displayEmployees(searchResult);
         } catch(Exception e) {
             e.printStackTrace();
         }
-//        for(Employee emp : repository.getAllEmployees()) {
-//            if(emp.getName().equals(name)) {
-//                searchResult.add(emp);
-//            }
-//        }
-        displayEmployees(searchResult);
     }
 
-    public int getTotalNoOfEmployees() {
+    public long getTotalNoOfEmployees() {
         return repository.getNoOfEmployees();
     }
 
     public void exportToCSV() {
-        String sql = "SELECT * FROM employee";
-        try(Connection con = DBConnection.getConnection();
-        PreparedStatement ps = con.prepareStatement(sql);
-        BufferedWriter bw = new BufferedWriter(new FileWriter("Employee Details.csv"));
-        ResultSet rs = ps.executeQuery()) {
+        List<Employee> employees = repository.getAllEmployees();
+
+        try(BufferedWriter bw = new BufferedWriter(new FileWriter("Employee Details.csv"))) {
             bw.write("ID,Name,Department,Dept_ID,Salary");
             bw.newLine();
-            while(rs.next()) {
-                int id = rs.getInt("id");
-                String name = rs.getString("name");
-                String department = rs.getString("department");
-                int deptId = rs.getInt("dept_id");
-                double salary = rs.getDouble("salary");
 
-                bw.write(id+","+name+","+department+","+deptId+","+salary);
+            for(Employee emp : employees) {
+                bw.write(emp.getEmployeeId()+","
+                        + emp.getName() + ","
+                        + emp.getDept() + ","
+                        + emp.getDeptId() + ","
+                        + emp.getSalary());
                 bw.newLine();
             }
-
-            System.out.println("Data successfully exported to CSV File");
         } catch(Exception e) {
             e.printStackTrace();
         }
     }
 
     public void updateEmployeeDetails(int id) {
-        String sql = "UPDATE employee SET name=? , dept_id=?, department = ? , salary=? WHERE id = ?";
         Scanner sc = new Scanner(System.in);
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Transaction tx = session.beginTransaction();
 
-        try(Connection con = DBConnection.getConnection();
-        PreparedStatement ps = con.prepareStatement(sql)) {
-            System.out.println("Enter name");
-//            sc.nextLine();
+            Employee emp = session.find(Employee.class,id);
+
+            if(emp == null) {
+                System.out.println("No employee with id : "+id);
+                return;
+            }
+
+            System.out.println("Enter Name: ");
             String name = sc.nextLine();
 
-            System.out.println("Enter Department ID");
+            System.out.println("Enter Department ID: ");
             int dept_id = sc.nextInt();
 
-            System.out.println("Enter Salary");
+            System.out.println("Enter Salary: ");
             double salary = sc.nextDouble();
 
-            Employee emp = new Employee(name,dept_id,salary);
+            emp.setName(name);
+            emp.setDeptId(dept_id);
+            emp.setSalary(salary);
 
-            ps.setString(1,emp.getName());
-            ps.setInt(2,emp.getDeptId());
-            ps.setString(3,emp.getDept());
-            ps.setDouble(4,emp.getSalary());
-            ps.setInt(5,id);
+            session.merge(emp);
+            tx.commit();
 
-            int rowsAffected = ps.executeUpdate();
-
-            if(rowsAffected == 0) {
-                System.out.println("No employee found with ID: " + id);
-            } else {
-                System.out.println("Employee Updated Successfully.");
-            }
-        } catch(SQLException e) {
+            System.out.println("Employee Updated Successfully");
+        } catch(Exception e) {
             e.printStackTrace();
         }
     }
 
     public void deleteEmployee(int id) {
-        String sql = "DELETE FROM employee WHERE id = "+id;
-        try(Connection con = DBConnection.getConnection();
-        PreparedStatement ps = con.prepareStatement(sql)) {
-            int rowsAffected = ps.executeUpdate();
-            if(rowsAffected == 0) {
-                System.out.println("No such Employee exists.");
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Transaction tx = session.beginTransaction();
+            Employee emp = session.find(Employee.class,id);
+            if(emp != null) {
+                session.remove(emp);
+                tx.commit();
+                System.out.println("Employee removed successfully.");
             } else {
-                System.out.println("Employee Deleted Successfully.");
+                System.out.println("No such employee exists.");
             }
-        } catch(SQLException e) {
+        } catch(Exception e) {
             e.printStackTrace();
         }
     }

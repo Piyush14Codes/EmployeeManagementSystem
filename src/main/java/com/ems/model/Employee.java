@@ -1,4 +1,7 @@
 package com.ems.model;
+
+import jakarta.persistence.*;
+
 enum Department {
     DEV(1,"Dev"),
     QA(2 , "QA"),
@@ -20,10 +23,13 @@ enum Department {
     }
 
 }
+@Entity
+@Table(name="employee")
 public class Employee {
 
-//    private static int empCount = 1;
-
+    @Id
+    @GeneratedValue(strategy  = GenerationType.IDENTITY)
+    @Column(name = "id")
     private int employeeId;
 
     private String name;
@@ -36,27 +42,28 @@ public class Employee {
 
     public Employee(String name , int deptId , double salary){
         setDeptId(deptId);
-        setDept(Department.getDepartmentNameById(deptId));
-//        setEmployeeId();
         setName(name);
         setSalary(salary);
-
-
     }
+    public Employee(){}
 
     //getter
     public int getEmployeeId(){
         return employeeId;
     }
+
     public String getName(){
         return name;
     }
+
     public String getDept(){
         return dept;
     }
+
     public int getDeptId(){
         return deptId;
     }
+
     public double getSalary(){
         return salary;
     }
@@ -65,15 +72,20 @@ public class Employee {
     public void setEmployeeId(int employeeId){
         this.employeeId = employeeId;
     }
+
     public void setName(String name){
         this.name = name;
     }
+
     public void setDept(String dept) {
         this.dept = dept;
     }
+
     public void setDeptId(int deptId) {
         this.deptId = deptId;
+        setDept(Department.getDepartmentNameById(deptId));
     }
+
     public void setSalary(double salary){
         this.salary = salary;
     }

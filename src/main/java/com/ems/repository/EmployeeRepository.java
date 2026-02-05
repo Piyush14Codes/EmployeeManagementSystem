@@ -1,69 +1,44 @@
 package com.ems.repository;
 import com.ems.model.Employee;
-import com.ems.util.DBConnection;
-import java.sql.*;
+import com.ems.util.HibernateUtil;
+import org.hibernate.Session;
+import org.hibernate.Transaction;
+import org.hibernate.query.Query;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.sql.*;
+import java.util.List;
 
 public class EmployeeRepository {
 //    private ArrayList<Employee> employeeList = new ArrayList<>();
 
 
     public void addEmployee(Employee emp){
-        String sql = "INSERT INTO employee(name , department , salary , dept_id) VALUES (?,?,?,?)";
-
-        try(Connection con = DBConnection.getConnection() ;
-        PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1,emp.getName());
-            ps.setString(2,emp.getDept());
-            ps.setDouble(3,emp.getSalary());
-            ps.setInt(4,emp.getDeptId());
-
-            ps.executeUpdate();
+        Transaction tx = null;
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            tx = session.beginTransaction();
+            session.persist(emp);
+            tx.commit();
         } catch(Exception e) {
+            if(tx != null) {
+                tx.rollback(); //rollback all the changes made during the session
+            }
             e.printStackTrace();
         }
 //        employeeList.add(emp);
     }
 
-    public ArrayList<Employee> getAllEmployees(){
+    public List<Employee> getAllEmployees(){
 //        return employeeList;
-        ArrayList<Employee> list = new ArrayList<>();
-
-        String sql = "SELECT * FROM employee";
-
-        try(Connection con = DBConnection.getConnection();
-        PreparedStatement ps = con.prepareStatement(sql);
-        ResultSet rs = ps.executeQuery()) {
-            while(rs.next()) {
-                Employee emp = new Employee(
-                        rs.getString("name"),
-                        rs.getInt("dept_id"),
-                        rs.getDouble("salary")
-                );
-                emp.setEmployeeId(rs.getInt("id"));
-                list.add(emp);
-            }
-        } catch(Exception e) {
-            e.printStackTrace();
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.createQuery("from Employee", Employee.class).list();
         }
-        return list;
     }
 
-    public int getNoOfEmployees() {
-        String sql = "SELECT COUNT(*) FROM employee";
-        int numOfEmployees = 0;
-        try(Connection con = DBConnection.getConnection();
-        PreparedStatement ps = con.prepareStatement(sql);
-        ResultSet rs = ps.executeQuery()) {
-            rs.next();
-            numOfEmployees = rs.getInt("COUNT(*)");
-        } catch(Exception e) {
-            e.printStackTrace();
+    public long getNoOfEmployees() {
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Query<Long> query = session.createQuery("select count(e) from Employee e", Long.class);
+            return query.getSingleResult();
         }
-        return numOfEmployees;
-//        return employeeList.size();
     }
 
 
