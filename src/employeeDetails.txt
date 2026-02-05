@@ -1,4 +1,0 @@
-  Employee ID     Employee Name       Dept ID     Dept Name       Salary
-  1         Piyush       1     Dev       40000
-  2         Daksh       1     Dev       40000
-5
